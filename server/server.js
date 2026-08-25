@@ -12,6 +12,7 @@ import connectClodinary from './configs/cloudinary.js';
 import productRouter from './routes/productRoute.js';
 import cartRouter from './routes/CartRoute.js';
 import addressRouter from './routes/AddressRoute.js';
+import orderRouter from './routes/OrderRoute.js';
 
 const app = express();
 const port = process.env.PORT || 4000; 
@@ -33,6 +34,7 @@ app.use('/api/seller', sellerRouter);
 app.use('/api/product', productRouter)
 app.use('/api/cart', cartRouter)
 app.use('/api/address', addressRouter)
+app.use('/api/order', orderRouter)
 app.listen(port, ()=>{
     console.log(`Server is running on http://localhost:${port}`);
     
