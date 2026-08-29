@@ -13,7 +13,7 @@ export const placeOrderCOD = async(req,res)=>{
         // Calculate Amount USing Items
         let amount = await items.reduce(async(acc, item) =>{
             const product = await Product.findById(item.product);
-            return (await acc) + product.offerPrice * items.quantity;
+            return (await acc) + product.offerPrice * item.quantity;
         }, 0)
 
         // Add tax Charge (2%)
@@ -38,7 +38,7 @@ export const placeOrderCOD = async(req,res)=>{
 
 export const getUserOrders = async(req, res)=>{
     try {
-        const { userId } = req.body;
+        const  userId  = req.userId;
         const orders = await Order.find({
             userId, 
             $or: [{paymentType: "COD"}, {isPaid: true}]

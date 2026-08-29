@@ -2,7 +2,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dummyProducts } from "../assets/greencart_assets/assets";
 import toast from "react-hot-toast";
+import axios from "axios";
 
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 export const AppContext = createContext();
 
 export const AppContextProvider = ({children})=>{
@@ -15,12 +18,57 @@ export const AppContextProvider = ({children})=>{
     const [products, setProducts ] = useState([])
 
     const [cartItems, setCartItems] = useState({})
-    const [searchQuery, setSearchQuery] = useState({})
+    const [isCartLoaded, setIsCartLoaded] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
+    // Fetch Seller Status
+    const fetchSeller = async() =>{
+        try {
+            const {data} = await axios.get('/api/seller/is-auth')
+            if(data.success){
+                setIsSeller(true)
+            }
+            else{
+                setIsSeller(false)
+            }
+        } catch (error) {
+            setIsSeller(false)
+            
+        }
+    }
+
+     // Fetch User auth State, User Data and Cart Items
+       const fetchUser = async () => {
+       try {
+           const {data} = await axios.get('/api/user/is-auth');
+           console.log("fetchUser response:", data);
+           if (data.success) {
+               setUser(data.user);
+               setCartItems(data.user.cartItems);
+           }
+       } catch (error) {
+           console.log("fetchUser error:", error.message);
+           console.log("fetchUser response:", data);
+          console.log("cartItems from server:", data.user.cartItems);
+           setUser(null);
+       } finally {
+           setIsCartLoaded(true);
+       }
+   };
     // Fetch All Products
 
     const fetchProducts = async() =>{
-        await setProducts(dummyProducts)
+        try {
+            const {data} = await axios.get('/api/product/list')
+            if(data.success){
+                setProducts(data.products)
+            }
+            else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
     }
     // Add Products to Cart
     const addToCart = (itemId) =>{
@@ -34,8 +82,7 @@ export const AppContextProvider = ({children})=>{
         }
         setCartItems(cartData);
         toast.success("Added to Cart")
-    }
-
+    };
     // Update Cart items quantity
     const updateCartItem =(itemId, quantity) =>{
         let cartData = structuredClone(cartItems);
@@ -54,7 +101,7 @@ export const AppContextProvider = ({children})=>{
         }
         toast.success("Removed from cart")
         setCartItems(cartData);
-    }
+    };
     // Get CArt Item Count
     const getCartCount=()=>{
         let totalCount = 0;
@@ -79,13 +126,36 @@ export const AppContextProvider = ({children})=>{
 
 
     useEffect(()=>{
+        fetchUser()
+        fetchSeller()
         fetchProducts()
     }, [])
+// Update Database Cart Items
+    useEffect(()=>{
+        const updateCart= async()=>{
+            try {
+                const {data} = await axios.post('/api/cart/update', {cartItems});
+                if(!data.success){
+                    toast.error(data.message);
+                }
+               
+                
+            } catch (error) {
+                toast.error(error.message)
+            }
+
+        };
+        if(user && isCartLoaded){
+            updateCart();
+        }
+
+    }, [cartItems]);
 
     const value= {navigate, user, setUser, setIsSeller, isSeller,
         showUserLogin, setShowUserLogin, products, currency, addToCart, updateCartItem,
-         removeFromCart, cartItems, searchQuery, setSearchQuery, getCartAmount, getCartCount
-    }
+         removeFromCart, cartItems, searchQuery, setSearchQuery, getCartAmount, getCartCount, 
+         axios, fetchProducts, setCartItems
+    };
 return<AppContext.Provider value={value}>
     {children}
 </AppContext.Provider>
